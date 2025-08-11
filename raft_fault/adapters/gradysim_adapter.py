@@ -37,7 +37,7 @@ class GradysimAdapter:
                  and timing services
     """
     
-    def __init__(self, provider):
+    def __init__(self, provider, protocol=None):
         """
         Initialize the Gradysim adapter.
         
@@ -48,8 +48,10 @@ class GradysimAdapter:
                      - cancel_timer()
                      - current_time()
                      - get_id()
+            protocol: Optional protocol instance for visualization (if None, will try to get from provider)
         """
         self.provider = provider
+        self.protocol = protocol
     
     def get_node_id(self) -> int:
         """
@@ -181,7 +183,7 @@ class GradysimAdapter:
             color (str): Name of the color (e.g., 'red', 'blue', etc.)
             node_id (int, optional): ID of the node to paint. If None, paints the current node.
         """
-        from gradysim.simulator.handler.visualization import VisualizationController
+        from gradysim.simulator.extension.visualization_controller import VisualizationController
 
         COLOR_MAP = {
             "red":    (255, 0, 0),
@@ -191,14 +193,29 @@ class GradysimAdapter:
             "purple": (255, 0, 255),
             "cyan":   (0, 255, 255),
             "white":  (255, 255, 255),
-            "black":  (0, 0, 0)
+            "black":  (0, 0, 0),
+            "orange": (255, 165, 0),
+            "pink":   (255, 192, 203),
+            "gray":   (128, 128, 128),
+            "brown":  (139, 69, 19)
         }
     
         # Use provided node_id or current node's ID
         target_node_id = node_id if node_id is not None else self.provider.get_id()
         color_rgb = COLOR_MAP.get(color.lower(), (0, 0, 0))  # Default to black if not found
-        visual_controller = VisualizationController()
-        visual_controller.paint_node(target_node_id, color_rgb)
+        
+        # Create VisualizationController with the protocol
+        try:
+            # Use stored protocol or try to get from provider
+            protocol = self.protocol or getattr(self.provider, 'protocol', None)
+            
+            if protocol is not None:
+                visual_controller = VisualizationController(protocol)
+                visual_controller.paint_node(target_node_id, color_rgb)
+            else:
+                print(f"Warning: Could not get protocol instance for visualization. Node {target_node_id} color change to {color} ignored.")
+        except Exception as e:
+            print(f"Error painting node {target_node_id} with color {color}: {e}")
 
     def _create_communication_command(self, message: str, target_id: Optional[int], is_broadcast: bool = False):
         """
@@ -266,7 +283,9 @@ class GradysimAdapter:
             'cancel_timer_callback': self.cancel_timer,
             'get_current_time_callback': self.get_current_time,
             'get_node_id_callback': self.get_node_id,
-            'get_node_position_callback': self.get_node_position  
+            'get_node_position_callback': self.get_node_position,
+            # Visualization callback
+            'paint_node_callback': self.paint_node
         }
         
         return callbacks

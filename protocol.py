@@ -8,7 +8,7 @@ from raft_fault import GradysimAdapter
 class RaftProtocol(IProtocol):
     def initialize(self):
         # Create the adapter for Gradysim
-        self.adapter = GradysimAdapter(self.provider)
+        self.adapter = GradysimAdapter(self.provider, protocol=self)
         
         # We initialize our counter at zero
         self.counter = 0
