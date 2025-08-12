@@ -1,6 +1,14 @@
 # RaftFault
 
-A lightweight, fault-tolerant Raft consensus implementation designed for distributed systems and Gradysim simulations. **RaftFault** focuses on consensus values and leader election without log replication, making it perfect for scenarios where you need distributed coordination but not full state machine replication.
+A lightweight, fault-tolerant Raft consensus implementation designed for distributed systems and network simulations. **RaftFault** focuses on consensus values and leader election without log replication, making it perfect for scenarios where you need distributed coordination but not full state machine replication.
+
+## **About GradySim**
+
+**GrADyS-SIM NextGen** is a network simulation framework that enables you to create simulations capable of representing scenarios populated by network nodes that coexist in a simulated environment and can send messages to each other. The primary focuses of the simulator are usability and flexibility. RaftFault is designed to integrate seamlessly with GradySim, allowing you to test distributed consensus algorithms in realistic network simulation environments.
+
+**Learn more about GradySim:**
+- 📖 **Documentation**: [https://project-gradys.github.io/gradys-sim-nextgen/](https://project-gradys.github.io/gradys-sim-nextgen/)
+- 🔗 **GitHub Repository**: [https://github.com/Project-GrADyS/gradys-sim-nextgen](https://github.com/Project-GrADyS/gradys-sim-nextgen)
 
 ## 🚀 **Key Features**
 
@@ -9,7 +17,7 @@ A lightweight, fault-tolerant Raft consensus implementation designed for distrib
 - ✅ **Heartbeat-Based Failure Detection**: Automatic detection of failed nodes
 - ✅ **Massive Failure Recovery**: Recovers from scenarios where massive quantity of nodes fail
 - ✅ **Scalable Architecture**: Works with any number of nodes (10, 50, 100+)
-- ✅ **Gradysim Integration**: Seamless integration with Gradysim simulation framework
+- ✅ **GradySim Integration**: Seamless integration with GrADyS-SIM NextGen simulation framework
 - ✅ **No Log Replication**: Lightweight implementation focused on consensus values
 - ✅ **Dynamic Majority Calculation**: Thresholds adapt to actual active nodes
 - ✅ **Dual Operation Modes**: Classic Raft and Fault-Tolerant modes
@@ -23,10 +31,11 @@ A lightweight, fault-tolerant Raft consensus implementation designed for distrib
 - [Raft Operation Modes](#raft-operation-modes)
 - [Setup and Installation](#setup-and-installation)
 - [Quick Start](#quick-start)
-- [Gradysim Integration](#gradysim-integration)
+- [GradySim Integration](#gradysim-integration)
 - [Consensus Variables](#consensus-variables)
 - [Active Node Discovery](#active-node-discovery)
 - [Failure Detection](#failure-detection)
+
 - [Project Structure](#project-structure)
 - [API Reference](#api-reference)
 - [Architecture](#architecture)
@@ -324,7 +333,7 @@ else:
     print("❌ Cluster lacks quorum")
 ```
 
-## **Gradysim Integration**
+## **GradySim Integration**
 
 ### **Protocol Implementation**
 
@@ -382,7 +391,7 @@ class RaftProtocol(IProtocol):
 
 ### **Adapter Features**
 
-The `GradysimAdapter` provides comprehensive platform integration capabilities:
+The `GradySimAdapter` provides comprehensive platform integration capabilities:
 
 - **Communication**: Point-to-point and broadcast messaging
 - **Timing**: Timer scheduling and cancellation
@@ -458,7 +467,7 @@ else:
 
 #### **Available Colors**
 
-The `paint_node()` method supports the following colors based on the Gradysim color palette:
+The `paint_node()` method supports the following colors based on the GradySim color palette:
 
 **Available Colors:**
 - `"red"` - Red (255, 0, 0)
@@ -511,6 +520,63 @@ if active_info['failed_nodes']:
 for node_id in active_info['failed_nodes']:
     adapter.paint_node("red", node_id=node_id)  # Failed nodes = red
 ```
+
+#### **Node Failure Simulation**
+
+RaftFault provides methods to manually simulate node failures for testing purposes:
+
+```python
+class RaftProtocol(IProtocol):
+    def initialize(self):
+        # ... existing initialization code ...
+        
+        # Schedule failure simulation after 3 seconds
+        self.provider.schedule_timer("failure_simulation", 3000)
+        
+        # Schedule recovery simulation after 7 seconds
+        self.provider.schedule_timer("recovery_simulation", 7000)
+    
+    def handle_timer(self, timer: str):
+        if timer == "failure_simulation":
+            # Simulate failure of specific nodes
+            nodes_to_fail = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            for node_id in nodes_to_fail:
+                self.consensus.set_simulation_active(node_id, False)
+            print(f"Simulated failure of nodes: {nodes_to_fail}")
+        
+        elif timer == "recovery_simulation":
+            # Simulate recovery of specific nodes
+            nodes_to_recover = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            for node_id in nodes_to_recover:
+                self.consensus.set_simulation_active(node_id, True)
+            print(f"Simulated recovery of nodes: {nodes_to_recover}")
+        
+        # Forward other timers to consensus
+        if self.consensus:
+            self.consensus.handle_timer(timer)
+    
+    def handle_telemetry(self, telemetry: Telemetry) -> None:
+        # Visual feedback based on simulation state
+        if self.consensus.is_leader():
+            self.adapter.paint_node("green", self.node_id)  # Leader = green
+        elif self.consensus.is_simulation_active(self.node_id):
+            self.adapter.paint_node("blue", self.node_id)   # Active = blue
+        else:
+            self.adapter.paint_node("red", self.node_id)    # Inactive = red
+```
+
+**Key Methods for Failure Simulation:**
+
+- **`set_simulation_active(node_id, True)`**: Mark a node as active in simulation
+- **`set_simulation_active(node_id, False)`**: Mark a node as inactive (failed) in simulation
+- **`is_simulation_active(node_id)`**: Check if a node is currently active in simulation
+
+**Important Notes:**
+- ✅ **Manual Control**: These methods provide manual control over node simulation state
+- ✅ **Testing Purposes**: Designed for testing failure scenarios and recovery mechanisms
+- ✅ **Visual Feedback**: Use with `paint_node()` for visual debugging
+- ✅ **Independent of Heartbeat**: Simulation state is separate from heartbeat-based failure detection
+- ✅ **Node-Specific**: Only affects the node if `node_id` matches the current node's ID
 
 
 ## **Consensus Variables**
@@ -822,6 +888,7 @@ failure_config.set_timeout_ms(120)           # 120ms timeout
 - **Callback Notifications**: Get notified of failures and recoveries
 - **Performance Metrics**: Track detection latency and success rates
 - **Automatic Integration**: Works seamlessly with Raft consensus
+- **Node Failure Simulation**: Methods to simulate nodes as failed or inactive for testing purposes
 
 ## **Project Structure**
 
@@ -831,11 +898,13 @@ RaftFault is organized as a clean, modular Python package with clear separation 
 RaftFault/
 ├── README.md                    # Project documentation
 ├── LICENSE.txt                  # MIT License
-├── main.py                      # Main simulation entry point
-├── protocol.py                  # Gradysim protocol implementation
+├── main.py                      # Example: GradySim simulation setup with RaftFault
+├── protocol.py                  # Example: RaftFault protocol implementation for GradySim
 ├── requirements.txt             # Python dependencies
 ├── activate_env.bat             # Windows environment activation script
 ├── activate_env.sh              # Linux/macOS environment activation script
+├── .gitignore                   # Git ignore rules
+├── .gitattributes               # Git attributes for line ending normalization
 ├── raft_fault/                  # Main RaftFault package
 │   ├── __init__.py             # Package exports and version
 │   ├── raft_node.py            # Core Raft algorithm implementation
@@ -845,26 +914,43 @@ RaftFault/
 │   ├── raft_state.py           # Raft state enums and constants
 │   ├── adapters/               # Platform integration adapters
 │   │   ├── __init__.py         # Adapter exports
-│   │   ├── gradysim_adapter.py # Gradysim platform adapter
+│   │   ├── gradysim_adapter.py # GradySim platform adapter
 │   │   └── README.md           # Adapter documentation
 │   └── failure_detection/      # Failure detection system
 │       ├── __init__.py         # Failure detection exports
 │       ├── heartbeat_detector.py # Heartbeat-based failure detection
 │       ├── failure_config.py   # Failure detection configuration
 │       └── failure_state.py    # Failure state management
-└── .gitignore                  # Git ignore rules
+```
 ```
 
 ### **Core Components**
 
 #### **📁 Root Level Files**
+
+##### **📖 Documentation & Configuration**
 - **`README.md`**: Comprehensive project documentation
-- **`main.py`**: Simulation entry point with node setup and configuration
-- **`protocol.py`**: Gradysim protocol implementation example
 - **`LICENSE.txt`**: MIT License for open source distribution
 - **`requirements.txt`**: Python dependencies (gradysim only)
 - **`activate_env.bat`**: Windows environment activation script
 - **`activate_env.sh`**: Linux/macOS environment activation script
+
+##### **🔧 Git Configuration**
+- **`.gitignore`**: Git ignore rules for Python projects
+- **`.gitattributes`**: Git attributes for line ending normalization across platforms
+
+##### **🎯 Example Usage Files**
+- **`main.py`**: **Complete example** of how to use RaftFault with GradySim
+  - Sets up a GradySim simulation with 40 nodes
+  - Demonstrates node positioning and cluster configuration
+  - Shows how to integrate RaftFault with GradySim simulation framework
+  - **Perfect starting point** for understanding RaftFault + GradySim integration
+
+- **`protocol.py`**: **RaftFault protocol implementation** for GradySim
+  - Implements the `RaftProtocol` class that extends GradySim's `IProtocol`
+  - Shows how to create and configure RaftFault consensus
+  - Demonstrates failure simulation and recovery scenarios
+  - **Reference implementation** for building your own RaftFault protocols
 
 #### **📁 `raft_fault/` - Main Package**
 
@@ -900,7 +986,7 @@ RaftFault/
 
 ##### **Platform Integration**
 - **`adapters/`**: Platform-specific integration
-  - **`gradysim_adapter.py`**: Gradysim simulation framework adapter
+  - **`gradysim_adapter.py`**: GradySim simulation framework adapter
   - **`README.md`**: Adapter documentation and usage guide
   - Callback-based architecture for platform independence
 
@@ -913,18 +999,18 @@ RaftFault/
 
 ### **File Size Distribution**
 
-| Component | Size | Purpose |
-|-----------|------|---------|
-| `raft_node.py` | 65KB | Core Raft implementation |
-| `raft_consensus.py` | 27KB | Public API facade |
-| `raft_message.py` | 12KB | Message system |
-| `raft_config.py` | 11KB | Configuration management |
-| `README.md` | 43KB | Documentation |
-| `gradysim_adapter.py` | ~8KB | Platform adapter |
-| `heartbeat_detector.py` | ~6KB | Failure detection |
-| `requirements.txt` | ~1KB | Dependencies |
-| `activate_env.bat` | ~1KB | Windows activation script |
-| `activate_env.sh` | ~1KB | Linux/macOS activation script |
+| Component               | Size | Purpose                       |
+|-------------------------|------|-------------------------------|
+| `raft_node.py`          | 65KB | Core Raft implementation      |
+| `raft_consensus.py`     | 27KB | Public API facade             |
+| `raft_message.py`       | 12KB | Message system                |
+| `raft_config.py`        | 11KB | Configuration management      |
+| `README.md`             | 43KB | Documentation                 |
+| `gradysim_adapter.py`   | ~8KB | Platform adapter              |
+| `heartbeat_detector.py` | ~6KB | Failure detection             |
+| `requirements.txt`      | ~1KB | Dependencies                  |
+| `activate_env.bat`      | ~1KB | Windows activation script     |
+| `activate_env.sh`       | ~1KB | Linux/macOS activation script |
 
 ### **Architecture Principles**
 
@@ -972,19 +1058,6 @@ from raft_fault.failure_detection import HeartbeatDetector
 - **Platform Tests**: Test with different adapters
 - **Performance Tests**: Measure consensus performance
 
-### **Future Expansion**
-
-#### **🚀 Planned Additions**
-- **`examples/`**: Usage examples and tutorials
-- **`tests/`**: Comprehensive test suite
-- **`docs/`**: Detailed API documentation
-- **`benchmarks/`**: Performance benchmarking tools
-
-#### **🔌 Additional Adapters**
-- **`ros2_adapter.py`**: ROS2 integration
-- **`websocket_adapter.py`**: WebSocket communication
-- **`mqtt_adapter.py`**: MQTT protocol support
-
 This structure provides a solid foundation for the RaftFault consensus system while maintaining clarity and extensibility for future development.
 
 ## **Architecture**
@@ -993,13 +1066,13 @@ This structure provides a solid foundation for the RaftFault consensus system wh
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   RaftConsensus │    │    RaftNode     │    │  GradysimAdapter│
+│   RaftConsensus │    │    RaftNode     │    │  GradySimAdapter│
 │   (Facade)      │◄──►│   (Core Logic)  │◄──►│   (Platform)    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   RaftConfig    │    │HeartbeatDetector│    │   Gradysim      │
+│   RaftConfig    │    │HeartbeatDetector│    │   GradySim      │
 │   (Settings)    │    │   (Internal)    │    │   (Simulation)  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
@@ -1007,10 +1080,10 @@ This structure provides a solid foundation for the RaftFault consensus system wh
 **Component Relationships:**
 - **RaftConsensus**: Public facade for consensus operations
 - **RaftNode**: Core Raft algorithm implementation
-- **GradysimAdapter**: Platform integration layer
+- **GradySimAdapter**: Platform integration layer
 - **RaftConfig**: Configuration and settings management
 - **HeartbeatDetector**: Internal failure detection (Fault-Tolerant mode only)
-- **Gradysim**: Simulation framework
+- **GradySim**: Simulation framework
 
 ### **Callback Pattern**
 
@@ -1068,6 +1141,9 @@ consensus.get_majority_info()                       # Get majority calculation i
 consensus.set_known_nodes([1, 2, 3, 4, 5])         # Set known nodes
 consensus.get_failed_nodes()                        # Get failed nodes
 consensus.get_active_nodes()                        # Get active nodes
+consensus.set_simulation_active(node_id, True)     # Set node as active in simulation
+consensus.set_simulation_active(node_id, False)    # Set node as inactive in simulation
+consensus.is_simulation_active(node_id)            # Check if node is active in simulation
 ```
 
 #### **RaftConfig**
@@ -1093,8 +1169,8 @@ failure_config.set_detection_interval(2)     # Check every 2 heartbeats
 failure_config.set_heartbeat_timeout(4)      # 4× heartbeat_interval = 200ms timeout
 ```
 
-#### **GradysimAdapter**
-Platform adapter for Gradysim integration.
+#### **GradySimAdapter**
+Platform adapter for GradySim integration.
 
 ```python
 # Initialization
@@ -1299,6 +1375,50 @@ print(f"Active nodes: {len(active_info['active_nodes'])}")
 
 ## **Troubleshooting**
 
+### **⚠️ Known Issue: Fault Tolerance Communication Range**
+
+**Important Warning**: When RaftFault is operating in **Fault-Tolerant Mode** (`RaftMode.FAULT_TOLERANT`) and the communication range is not large enough to reach all nodes in the swarm, the system may not converge to stability and consecutive elections may be triggered repeatedly.
+
+**Problem Description:**
+- In Fault-Tolerant mode, nodes perform active node discovery before elections
+- When communication range is limited, the network may form multiple disconnected clusters
+- **Edge nodes** that can be reached by multiple clusters simultaneously become a critical issue
+- These edge nodes may receive conflicting election requests from different clusters
+- This leads to incorrect majority calculations and failed leader elections
+- The system may enter a cycle of repeated elections without reaching consensus
+- **Most likely cause**: Edge nodes being simultaneously accessible by multiple clusters, creating conflicting consensus states
+
+**Current Status:**
+This is an **open research problem** for which a complete solution is not yet known. The issue occurs in distributed systems where:
+- Nodes have limited communication range
+- The network topology creates disconnected components
+- The consensus algorithm requires global knowledge for proper operation
+
+**Impact:**
+- ❌ System may not converge to a stable leader
+- ❌ Consecutive election cycles may occur
+- ❌ Consensus values may not be committed
+- ❌ Performance degradation due to constant re-elections
+
+**Workarounds:**
+1. **Increase Communication Range**: Ensure all nodes can communicate with each other
+2. **Use Classic Mode**: Switch to `RaftMode.CLASSIC` for scenarios with limited communication range
+3. **Network Topology Design**: Design network topology to ensure full connectivity
+
+**Call for Contributions:**
+This remains an **open research challenge** in distributed consensus algorithms. We invite researchers and developers to:
+
+- 🔬 **Research Solutions**: Investigate novel approaches to consensus in limited-range networks
+- 💡 **Propose Algorithms**: Develop new consensus algorithms for disconnected networks
+- 🧪 **Test Scenarios**: Create test cases and benchmarks for this problem
+- 📝 **Document Solutions**: Share findings and potential solutions
+- 🤝 **Collaborate**: Work together to find a robust solution
+
+**Contact for Contributions:**
+If you have ideas, solutions, or want to contribute to solving this problem, please contact:
+- **Email**: [llucchesi@inf.puc-rio.br](mailto:llucchesi@inf.puc-rio.br)
+- **Subject**: "RaftFault - Fault Tolerance Communication Range Issue"
+
 ### **Common Issues**
 
 #### **1. No Leader Elected**
@@ -1408,14 +1528,149 @@ print(f"Success rate: {metrics['success_rate_percent']}%")
 
 ## **Version Information**
 
-- **Current Version**: 1.0.0
+- **Current Version**: 0.1.0
 - **Python Compatibility**: 3.7+
-- **Gradysim Compatibility**: Latest versions
+- **GradySim Compatibility**: 0.7.3+
 - **License**: MIT License
 
 ## **Contributing**
 
-Contributions are welcome! Please see the project repository for contribution guidelines.
+Contributions are welcome! We appreciate any help in improving RaftFault. Here's how you can contribute:
+
+### **How to Contribute**
+
+#### **1. Fork the Repository**
+1. Go to the [RaftFault repository](https://github.com/your-username/RaftFault)
+2. Click the "Fork" button in the top-right corner
+3. This creates a copy of the repository in your GitHub account
+
+#### **2. Clone Your Fork**
+```bash
+git clone https://github.com/your-username/RaftFault.git
+cd RaftFault
+```
+
+#### **3. Set Up Development Environment**
+```bash
+# Create and activate virtual environment
+python -m venv raft_env
+source raft_env/bin/activate  # On Windows: raft_env\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+#### **4. Create a Feature Branch**
+```bash
+git checkout -b feature/your-feature-name
+# or
+git checkout -b fix/your-bug-fix
+```
+
+#### **5. Make Your Changes**
+- Write your code following the existing style
+- Add tests for new functionality
+- Update documentation if needed
+- Ensure all tests pass
+
+#### **6. Test Your Changes**
+```bash
+# Run the example
+python main.py
+
+# If you have tests, run them
+python -m pytest tests/
+```
+
+#### **7. Commit Your Changes**
+```bash
+git add .
+git commit -m "Add descriptive commit message"
+```
+
+#### **8. Push to Your Fork**
+```bash
+git push origin feature/your-feature-name
+```
+
+#### **9. Create a Pull Request**
+1. Go to your fork on GitHub
+2. Click "Compare & pull request" for your branch
+3. Fill in the pull request template:
+   - **Title**: Brief description of changes
+   - **Description**: Detailed explanation of what was changed and why
+   - **Type**: Bug fix, Feature, Documentation, etc.
+   - **Testing**: How you tested your changes
+
+### **Contribution Guidelines**
+
+#### **Code Style**
+- Follow PEP 8 Python style guidelines
+- Use meaningful variable and function names
+- Add comments for complex logic
+- Keep functions focused and concise
+
+#### **Documentation**
+- Update README.md if you add new features
+- Add docstrings to new functions and classes
+- Include usage examples for new functionality
+
+#### **Testing**
+- Add tests for new features
+- Ensure existing tests still pass
+- Test edge cases and error conditions
+
+#### **Pull Request Process**
+1. **Small Changes**: Keep pull requests focused on a single feature or fix
+2. **Clear Description**: Explain what was changed and why
+3. **Reference Issues**: Link to any related issues or discussions
+4. **Screenshots**: Include screenshots for UI changes if applicable
+
+### **Areas for Contribution**
+
+#### **High Priority**
+- 🔬 **Research Solutions**: Investigate the fault tolerance communication range issue
+- 🧪 **Test Scenarios**: Create comprehensive test cases
+- 📊 **Performance Optimization**: Improve consensus performance
+- 🐛 **Bug Fixes**: Fix any issues you encounter
+
+#### **Medium Priority**
+- 📚 **Documentation**: Improve existing documentation
+- 🔧 **Code Refactoring**: Improve code structure and readability
+- 🌐 **Platform Support**: Add support for other simulation platforms
+- 📈 **Monitoring**: Add better monitoring and debugging tools
+
+#### **Low Priority**
+- 🎨 **UI Improvements**: Enhance visualization features
+- 📝 **Examples**: Create additional usage examples
+- 🔍 **Code Analysis**: Improve code quality and coverage
+
+### **Getting Help**
+
+If you need help with your contribution:
+- Open an issue to discuss your idea
+- Ask questions in the issue comments
+- Contact the maintainer: [llucchesi@inf.puc-rio.br](mailto:llucchesi@inf.puc-rio.br)
+
+### **Code of Conduct**
+
+- Be respectful and inclusive
+- Focus on constructive feedback
+- Help others learn and grow
+- Follow the project's coding standards
+
+## **Contact**
+
+For questions, suggestions, or collaboration opportunities, please contact the project author:
+
+- **Author**: Laércio Lucchesi
+- **Laboratory**: LAC - Laboratory for Advanced Collaboration 
+- **Department**: Computer Science
+- **University**: PUC-Rio / Pontifical Catholic University of Rio de Janeiro
+- **Location**: Rio de Janeiro, RJ, Brazil
+- **Email**: [llucchesi@inf.puc-rio.br](mailto:llucchesi@inf.puc-rio.br)
+
+
 
 ## **License**
 
