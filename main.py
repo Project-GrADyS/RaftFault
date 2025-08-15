@@ -1,5 +1,5 @@
-# This is a test file to test the RAFT protocol
-# It creates 10 nodes at random positions on the ground level
+# This is an example file to test the RAFT protocol
+# It creates 40 nodes at random positions on the ground level
 # and executes consensus among them
 
 

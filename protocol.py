@@ -36,8 +36,8 @@ class RaftProtocol(IProtocol):
 
         # Create configuration
         config = RaftConfig()
-        config.set_election_timeout(200, 400)  # 150-500ms
-        config.set_heartbeat_interval(30)      # 50ms (aumentado para respeitar timeout mínimo)
+        config.set_election_timeout(150, 300)  # 150-300ms
+        config.set_heartbeat_interval(50)      # 50ms (aumentado para respeitar timeout mínimo)
         config.add_consensus_variable("v_int", int)
         config.set_logging(enable=True, level="INFO")
             
@@ -59,7 +59,7 @@ class RaftProtocol(IProtocol):
         )
 
         # Set known nodes and start consensus
-        total_nodes = 40  # Apenas 9 nós conhecidos
+        total_nodes = 40  # 40 nós conhecidos
         known_nodes = list(range(total_nodes))
         self.consensus.set_known_nodes(known_nodes)
         self.consensus.start()
@@ -74,17 +74,6 @@ class RaftProtocol(IProtocol):
             self.counter += 1
             # Schedule next monitoring
             self.adapter.schedule_timer("counter_timer", 1000)
-
-            # Get active nodes info (works in both Classic and Fault Tolerant modes)
-            # logging.critical(f"*** self.node_id: {self.node_id}/{self.counter}   ***")
-            # active_info = self.consensus.get_active_nodes_info()
-            # logging.critical(f"Active nodes: {active_info['active_nodes']}")
-            # logging.critical(f"Active count: {active_info['active_count']}")
-            # logging.critical(f"Detection method: {active_info['detection_method']}")
-            # logging.critical(f"Node role: {active_info['node_role']}")
-            # logging.critical(f"Has majority: {active_info['has_majority']}")
-            # logging.critical(f"Total known: {active_info['total_known']}")
-            # logging.critical(f"Raft mode: {active_info['raft_mode']}")
 
         if timer == "failure_simulation_timer":
             inactive_nodes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]

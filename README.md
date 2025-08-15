@@ -10,23 +10,24 @@ A lightweight, fault-tolerant Raft consensus implementation designed for distrib
 - 📖 **Documentation**: [https://project-gradys.github.io/gradys-sim-nextgen/](https://project-gradys.github.io/gradys-sim-nextgen/)
 - 🔗 **GitHub Repository**: [https://github.com/Project-GrADyS/gradys-sim-nextgen](https://github.com/Project-GrADyS/gradys-sim-nextgen)
 
-## 🚀 **Key Features**
+##  **Raft Fault Key Features**
 
-- ✅ **Fault-Tolerant Consensus**: Robust leader election with automatic recovery
-- ✅ **Active Node Discovery**: Dynamic cluster size detection for accurate majority calculations
-- ✅ **Heartbeat-Based Failure Detection**: Automatic detection of failed nodes
-- ✅ **Massive Failure Recovery**: Recovers from scenarios where massive quantity of nodes fail
-- ✅ **Scalable Architecture**: Works with any number of nodes (10, 50, 100+)
-- ✅ **GradySim Integration**: Seamless integration with GrADyS-SIM NextGen simulation framework
-- ✅ **No Log Replication**: Lightweight implementation focused on consensus values
-- ✅ **Dynamic Majority Calculation**: Thresholds adapt to actual active nodes
-- ✅ **Dual Operation Modes**: Classic Raft and Fault-Tolerant modes
-- ✅ **Callback-Based Architecture**: Clean separation between consensus and platform
-- ✅ **Active Node Information**: Real-time access to node information
+- **Fault-Tolerant Consensus**: Robust leader election with automatic recovery
+- **Active Node Discovery**: Dynamic cluster size detection for accurate majority calculations
+- **Heartbeat-Based Failure Detection**: Automatic detection of failed nodes
+- **Massive Failure Recovery**: Recovers from scenarios where massive quantity of nodes fail
+- **Scalable Architecture**: Works with any number of nodes (10, 50, 100+)
+- **GradySim Integration**: Seamless integration with GrADyS-SIM NextGen simulation framework
+- **No Log Replication**: Lightweight implementation focused on consensus values
+- **Dynamic Majority Calculation**: Thresholds adapt to actual active nodes
+- **Dual Operation Modes**: Classic Raft and Fault-Tolerant modes
+- **Callback-Based Architecture**: Clean separation between consensus and platform
+- **Active Node Information**: Real-time access to node information
 
-## 📋 **Table of Contents**
+##  **Table of Contents**
 
 - [Overview](#overview)
+- [Raft Timers and System Integration](#raft-timers-and-system-integration)
 - [Key Innovations](#key-innovations)
 - [Raft Operation Modes](#raft-operation-modes)
 - [Setup and Installation](#setup-and-installation)
@@ -54,13 +55,65 @@ RaftFault implements a **fault-tolerant distributed consensus** system based on 
 
 ### **What Makes RaftFault Special**
 
-1. **🎯 Active Node Discovery**: Before elections, nodes discover the actual number of active peers
-2. **🔄 Dynamic Majority**: Thresholds calculated based on discovered active nodes, not total nodes
-3. **💪 Massive Failure Recovery**: Can recover even when massive quantity of nodes fail
-4. **⚡ Fast Recovery**: Discovery phase ensures quick leader election after failures
-5. **🔧 Scalable**: Works with any cluster size without configuration changes
-6. **🎛️ Dual Modes**: Choose between Classic Raft and Fault-Tolerant operation
-7. **🔌 Adapter Pattern**: Clean integration with any platform via callbacks
+1. **Active Node Discovery**: Before elections, nodes discover the actual number of active peers
+2. **Dynamic Majority**: Thresholds calculated based on discovered active nodes, not total nodes
+3. **Massive Failure Recovery**: Can recover even when massive quantity of nodes fail
+4. **Fast Recovery**: Discovery phase ensures quick leader election after failures
+5. **Scalable**: Works with any cluster size without configuration changes
+6. **Dual Modes**: Choose between Classic Raft and Fault-Tolerant operation
+7. **Adapter Pattern**: Clean integration with any platform via callbacks
+
+## **Raft Timers and System Integration**
+
+### **⚠️ Important: Reserved Timer Names**
+
+RaftFault uses specific timer names that are **exclusive to the system** and cannot be used for other purposes. Using these names for your own timers will cause conflicts and disrupt the consensus operation.
+
+#### **Reserved Timer Names:**
+
+1. **`"election_timeout"`** - Controls when a node should start an election
+2. **`"heartbeat"`** - Controls leader heartbeat sending
+3. **`"discovery_timeout_{node_id}_{term}"`** - Controls active node discovery timeout
+
+#### **Timer Behavior:**
+
+- **Election Timeout**: Randomized between `min_timeout` and `max_timeout` (e.g., 200-400ms)
+- **Heartbeat**: Fixed interval defined by `heartbeat_interval` (e.g., 30ms)
+- **Discovery Timeout**: Based on election timeout for active node discovery
+
+#### **Configuration Example:**
+
+```python
+config = RaftConfig()
+config.set_election_timeout(200, 400)  # 200-400ms randomized
+config.set_heartbeat_interval(30)      # 30ms fixed interval
+```
+
+#### **⚠️ Warning:**
+
+**DO NOT** use these timer names for your own timers:
+```python
+# ❌ WRONG - Will conflict with Raft system
+adapter.schedule_timer("election_timeout", 1000)  # Conflicts with Raft
+adapter.schedule_timer("heartbeat", 500)          # Conflicts with Raft
+
+# ✅ CORRECT - Use different names
+adapter.schedule_timer("my_custom_timer", 1000)   # Safe to use
+adapter.schedule_timer("monitoring_timer", 500)   # Safe to use
+```
+
+### **Failure Detection (No Dedicated Timers)**
+
+The failure detection system does **not** use dedicated timers. Instead, it operates based on:
+- **Heartbeat counter**: Checks every N heartbeats (defined by `detection_interval`)
+- **Timeout calculations**: Based on heartbeat interval or absolute values
+- **Response tracking**: Monitors heartbeat responses from all nodes
+
+```python
+failure_config = config.get_failure_config()
+failure_config.set_detection_interval(2)     # Check every 2 heartbeats
+failure_config.set_heartbeat_timeout(4)      # 4× heartbeat_interval
+```
 
 ## **Beyond Classic Raft: Essential Extensions**
 
@@ -78,10 +131,10 @@ majority = (discovered_active // 2) + 1     # Uses actual active nodes
 ```
 
 **Benefits:**
-- ✅ **Accurate majority calculations** after failures
-- ✅ **Faster leader election** with correct thresholds
-- ✅ **Automatic adaptation** to cluster changes
-- ✅ **No manual configuration** needed
+-  **Accurate majority calculations** after failures
+-  **Faster leader election** with correct thresholds
+-  **Automatic adaptation** to cluster changes
+-  **No manual configuration** needed
 
 ### **2. Massive Failure Recovery**
 
@@ -123,18 +176,18 @@ raft_node = RaftNode(node_id=1, config=config, callbacks=callbacks)
 
 RaftFault supports two distinct operation modes, allowing you to choose between classic Raft behavior and fault-tolerant enhancements:
 
-### **🎯 Classic Raft Mode (`RaftMode.CLASSIC`)**
+### **Classic Raft Mode (`RaftMode.CLASSIC`)**
 
 Classic Raft Mode implements the standard Raft protocol as specified by Ongaro and Ousterhout [1]. The only divergence in our system is replication: Raft-Fault targets agreement on consensus values rather than maintaining a replicated log.
 [1] D. Ongaro and J. Ousterhout, “In Search of an Understandable Consensus Algorithm,” Proc. USENIX ATC, Philadelphia, PA, USA, Jun. 2014, pp. 305–319.
 
 **Characteristics:**
-- ✅ **Fixed Cluster Size**: Uses total known nodes for all majority calculations
-- ✅ **Direct Elections**: No discovery phase - immediate election on timeout
-- ✅ **Standard Behavior**: Classic Raft consensus semantics
-- ✅ **Better Performance**: Lower overhead (no discovery phase)
-- ✅ **Deterministic**: Predictable behavior for static clusters
-- ❌ **Manual Failure Handling**: Requires manual cluster reconfiguration after failures
+-  **Fixed Cluster Size**: Uses total known nodes for all majority calculations
+-  **Direct Elections**: No discovery phase - immediate election on timeout
+-  **Standard Behavior**: Classic Raft consensus semantics
+-  **Better Performance**: Lower overhead (no discovery phase)
+-  **Deterministic**: Predictable behavior for static clusters
+-  **Manual Failure Handling**: Requires manual cluster reconfiguration after failures
 
 **Use Cases:**
 - Static clusters with fixed, known node count
@@ -142,18 +195,18 @@ Classic Raft Mode implements the standard Raft protocol as specified by Ongaro a
 - Systems requiring standard Raft semantics
 - Scenarios with manual failure management
 
-### **🔧 Fault-Tolerant Raft Mode (`RaftMode.FAULT_TOLERANT`)**
+### **Fault-Tolerant Raft Mode (`RaftMode.FAULT_TOLERANT`)**
 
 Enhanced Raft implementation with automatic fault tolerance and dynamic cluster adaptation.
 
 **Characteristics:**
-- ✅ **Dynamic Active Node Detection**: Discovery phase before elections
-- ✅ **Adaptive Majority Calculation**: Uses active node count for thresholds
-- ✅ **Massive Failure Recovery**: Automatic recovery from massive quantity of node failures
-- ✅ **Self-Healing**: Automatic adaptation to cluster changes
-- ✅ **Fault Tolerance**: No manual intervention needed
-- ✅ **Active Node Information**: Real-time access to node information
-- ⚡ **Discovery Overhead**: Small performance cost for discovery phase
+-  **Dynamic Active Node Detection**: Discovery phase before elections
+-  **Adaptive Majority Calculation**: Uses active node count for thresholds
+-  **Massive Failure Recovery**: Automatic recovery from massive quantity of node failures
+-  **Self-Healing**: Automatic adaptation to cluster changes
+-  **Fault Tolerance**: No manual intervention needed
+-  **Active Node Information**: Real-time access to node information
+-  **Discovery Overhead**: Small performance cost for discovery phase
 
 **Use Cases:**
 - Dynamic environments with node failures
@@ -225,17 +278,17 @@ print(f"Current mode: {current_mode.value}")
 ### **Choosing the Right Mode**
 
 **Choose Classic Mode When:**
-- 🎯 Cluster size is fixed and known
-- 🎯 Performance is critical
-- 🎯 Standard Raft behavior is required
-- 🎯 Manual failure management is acceptable
+-  Cluster size is fixed and known
+-  Performance is critical
+-  Standard Raft behavior is required
+-  Manual failure management is acceptable
 
 **Choose Fault-Tolerant Mode When:**
-- 🔧 Nodes may fail unexpectedly
-- 🔧 Automatic fault recovery is needed
-- 🔧 Cluster size varies dynamically
-- 🔧 High availability is required
-- 🔧 Active node information is needed
+-  Nodes may fail unexpectedly
+-  Automatic fault recovery is needed
+-  Cluster size varies dynamically
+-  High availability is required
+-  Active node information is needed
 
 ## **Setup and Installation**
 
@@ -276,7 +329,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### **Main Dependencies**
+### **Main Dependency**
 
 - `gradysim` 0.7.3 - Simulation framework
 
@@ -572,11 +625,11 @@ class RaftProtocol(IProtocol):
 - **`is_simulation_active(node_id)`**: Check if a node is currently active in simulation
 
 **Important Notes:**
-- ✅ **Manual Control**: These methods provide manual control over node simulation state
-- ✅ **Testing Purposes**: Designed for testing failure scenarios and recovery mechanisms
-- ✅ **Visual Feedback**: Use with `paint_node()` for visual debugging
-- ✅ **Independent of Heartbeat**: Simulation state is separate from heartbeat-based failure detection
-- ✅ **Node-Specific**: Only affects the node if `node_id` matches the current node's ID
+-  **Manual Control**: These methods provide manual control over node simulation state
+-  **Testing Purposes**: Designed for testing failure scenarios and recovery mechanisms
+-  **Visual Feedback**: Use with `paint_node()` for visual debugging
+-  **Independent of Heartbeat**: Simulation state is separate from heartbeat-based failure detection
+-  **Node-Specific**: Only affects the node if `node_id` matches the current node's ID
 
 
 ## **Consensus Variables**
@@ -1014,19 +1067,19 @@ RaftFault/
 
 ### **Architecture Principles**
 
-#### **🔧 Modular Design**
+#### **Modular Design**
 - **Separation of Concerns**: Each file has a specific responsibility
 - **Clean Interfaces**: Well-defined APIs between components
 - **Loose Coupling**: Components interact through interfaces, not direct dependencies
 
-#### **🎯 Package Organization**
+#### **Package Organization**
 - **Public API**: `raft_consensus.py` provides the main interface
 - **Core Logic**: `raft_node.py` contains the Raft algorithm
 - **Configuration**: `raft_config.py` manages all settings
 - **Platform Integration**: `adapters/` handles different platforms
 - **Failure Detection**: `failure_detection/` provides fault tolerance
 
-#### **📦 Import Structure**
+#### **Import Structure**
 ```python
 # Main package exports
 from raft_fault import RaftConsensus, RaftConfig, RaftMode, GradysimAdapter
@@ -1039,20 +1092,20 @@ from raft_fault.failure_detection import HeartbeatDetector
 
 ### **Development Guidelines**
 
-#### **✅ Adding New Features**
+#### **Adding New Features**
 1. **Core Logic**: Add to `raft_node.py` for algorithm changes
 2. **Public API**: Extend `raft_consensus.py` for new user features
 3. **Configuration**: Update `raft_config.py` for new settings
 4. **Messages**: Add to `raft_message.py` for new message types
 5. **Adapters**: Create new adapter in `adapters/` for new platforms
 
-#### **🔧 Code Organization**
+#### ** Code Organization**
 - **Single Responsibility**: Each file has one clear purpose
 - **Consistent Naming**: Follow Python naming conventions
 - **Documentation**: All public APIs are documented
 - **Type Hints**: Used throughout for better IDE support
 
-#### **📝 Testing Strategy**
+#### ** Testing Strategy**
 - **Unit Tests**: Test individual components in isolation
 - **Integration Tests**: Test component interactions
 - **Platform Tests**: Test with different adapters
@@ -1230,11 +1283,11 @@ DiscoveryHeartbeatResponse(term, node_id, is_active)
 ```
 
 **Important Notes:**
-- ✅ **Transparent to Users**: You never need to create or handle these messages directly
-- ✅ **Automatic Handling**: The system automatically sends and processes messages based on the current mode
-- ✅ **Mode-Aware**: In Classic mode, discovery messages are not used
-- ✅ **Internal Implementation**: These are implementation details, not part of the public API
-- ✅ **JSON Serialization**: Messages are automatically serialized/deserialized for network transmission
+-  **Transparent to Users**: You never need to create or handle these messages directly
+-  **Automatic Handling**: The system automatically sends and processes messages based on the current mode
+-  **Mode-Aware**: In Classic mode, discovery messages are not used
+-  **Internal Implementation**: These are implementation details, not part of the public API
+-  **JSON Serialization**: Messages are automatically serialized/deserialized for network transmission
 
 **Example of Automatic Message Handling:**
 ```python
@@ -1408,11 +1461,11 @@ This is an **open research problem** for which a complete solution is not yet kn
 **Call for Contributions:**
 This remains an **open research challenge** in distributed consensus algorithms. We invite researchers and developers to:
 
-- 🔬 **Research Solutions**: Investigate novel approaches to consensus in limited-range networks
-- 💡 **Propose Algorithms**: Develop new consensus algorithms for disconnected networks
-- 🧪 **Test Scenarios**: Create test cases and benchmarks for this problem
-- 📝 **Document Solutions**: Share findings and potential solutions
-- 🤝 **Collaborate**: Work together to find a robust solution
+-  **Research Solutions**: Investigate novel approaches to consensus in limited-range networks
+-  **Propose Algorithms**: Develop new consensus algorithms for disconnected networks
+-  **Test Scenarios**: Create test cases and benchmarks for this problem
+-  **Document Solutions**: Share findings and potential solutions
+-  **Collaborate**: Work together to find a robust solution
 
 **Contact for Contributions:**
 If you have ideas, solutions, or want to contribute to solving this problem, please contact:
@@ -1540,7 +1593,7 @@ Contributions are welcome! We appreciate any help in improving RaftFault. Here's
 ### **How to Contribute**
 
 #### **1. Fork the Repository**
-1. Go to the [RaftFault repository](https://github.com/your-username/RaftFault)
+1. Go to the [RaftFault repository](https://github.com/Project-GrADyS/RaftFault)
 2. Click the "Fork" button in the top-right corner
 3. This creates a copy of the repository in your GitHub account
 
@@ -1629,21 +1682,21 @@ git push origin feature/your-feature-name
 ### **Areas for Contribution**
 
 #### **High Priority**
-- 🔬 **Research Solutions**: Investigate the fault tolerance communication range issue
-- 🧪 **Test Scenarios**: Create comprehensive test cases
-- 📊 **Performance Optimization**: Improve consensus performance
-- 🐛 **Bug Fixes**: Fix any issues you encounter
+-  **Research Solutions**: Investigate the fault tolerance communication range issue
+-  **Test Scenarios**: Create comprehensive test cases
+-  **Performance Optimization**: Improve consensus performance
+-  **Bug Fixes**: Fix any issues you encounter
 
 #### **Medium Priority**
-- 📚 **Documentation**: Improve existing documentation
-- 🔧 **Code Refactoring**: Improve code structure and readability
-- 🌐 **Platform Support**: Add support for other simulation platforms
-- 📈 **Monitoring**: Add better monitoring and debugging tools
+-  **Documentation**: Improve existing documentation
+-  **Code Refactoring**: Improve code structure and readability
+-  **Platform Support**: Add support for other simulation platforms
+-  **Monitoring**: Add better monitoring and debugging tools
 
 #### **Low Priority**
-- 🎨 **UI Improvements**: Enhance visualization features
-- 📝 **Examples**: Create additional usage examples
-- 🔍 **Code Analysis**: Improve code quality and coverage
+-  **UI Improvements**: Enhance visualization features
+-  **Examples**: Create additional usage examples
+-  **Code Analysis**: Improve code quality and coverage
 
 ### **Getting Help**
 
@@ -1667,7 +1720,7 @@ For questions, suggestions, or collaboration opportunities, please contact the p
 - **Laboratory**: LAC - Laboratory for Advanced Collaboration 
 - **Department**: Computer Science
 - **University**: PUC-Rio / Pontifical Catholic University of Rio de Janeiro
-- **Location**: Rio de Janeiro, RJ, Brazil
+- **Location**: Rio de Janeiro - RJ - Brazil
 - **Email**: [llucchesi@inf.puc-rio.br](mailto:llucchesi@inf.puc-rio.br)
 
 
