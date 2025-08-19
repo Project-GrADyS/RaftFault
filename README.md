@@ -1,6 +1,6 @@
 # RaftFault
 
-A lightweight, fault-tolerant Raft consensus implementation designed for distributed systems and network simulations. **RaftFault** focuses on consensus values and leader election without log replication, making it perfect for scenarios where you need distributed coordination but not full state machine replication.
+A fault-tolerant Raft consensus implementation designed for distributed systems and network simulations. **RaftFault** focuses on consensus values and leader election without log replication, making it perfect for scenarios where you need distributed coordination but not full state machine replication.
 
 ## **About GradySim**
 
