@@ -329,7 +329,7 @@ class RaftNode:
             self._handle_election_timeout()
         elif timer_name == "heartbeat":
             self._handle_heartbeat_timeout()
-        elif timer_name.startswith("discovery_timeout_"):
+        elif timer_name == "discovery_timeout":
             self._handle_discovery_timeout()
         else:
             self.logger.warning(f"Unknown timer: {timer_name}")
@@ -500,8 +500,8 @@ class RaftNode:
             if node_id != self.node_id:
                 self._send_message(message_str, node_id)
         
-        # Schedule discovery timeout
-        self._discovery_timeout = f"discovery_timeout_{self.node_id}_{self.current_term}"
+        # Schedule discovery timeout  
+        self._discovery_timeout = "discovery_timeout"
         self._schedule_timer(self._discovery_timeout, discovery_timeout)
         self.active_timers.add(self._discovery_timeout)
         
@@ -814,6 +814,13 @@ class RaftNode:
             self._cancel_timer("election_timeout")
             self.active_timers.remove("election_timeout")
         
+        # Cancel discovery timeout since we're now the leader
+        if "discovery_timeout" in self.active_timers:
+            self._cancel_timer("discovery_timeout")
+            self.active_timers.remove("discovery_timeout")
+            self._discovery_timeout = None
+            self._is_discovering = False
+        
         # Send initial heartbeat
         self._send_append_entries()
         self._schedule_heartbeat_timer()
@@ -836,6 +843,13 @@ class RaftNode:
         if "heartbeat" in self.active_timers:
             self._cancel_timer("heartbeat")
             self.active_timers.remove("heartbeat")
+        
+        # Cancel discovery timeout if active
+        if "discovery_timeout" in self.active_timers:
+            self._cancel_timer("discovery_timeout")
+            self.active_timers.remove("discovery_timeout")
+            self._discovery_timeout = None
+            self._is_discovering = False
         
         # Schedule election timeout when becoming follower
         self._schedule_election_timeout()
